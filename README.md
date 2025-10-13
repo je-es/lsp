@@ -2,7 +2,7 @@
 <br>
 <div align="center">
     <p>
-        <img src="./assets/img/logo.png" alt="project" height="80" />
+        <img src="./assets/img/logo.png" alt="lsp" height="70" />
     </p>
 </div>
 
@@ -12,7 +12,7 @@
 
 <p align="center" style="font-style:italic; color:gray;">
     <br>
-    A library for analyzing and validating Abstract Syntax Trees..!
+    A customizable language server protocol..!
     <br>
 </p>
 
@@ -27,18 +27,18 @@
 
 <!----------------------------------- HMM ----------------------------------->
 
-## [5] [`@je-es/project`](https://github.com/je-es/project) 🚀
+## [8] [`@je-es/lsp`](https://github.com/je-es/lsp) 🚀
 
-> _To understand the full context, please refer to [these documents](https://github.com/kemet-lang/.github/blob/main/profile/README.md)._
+> _To understand the full context, please refer to [these documents](https://github.com/kemet-lang/.github/blob/main/profile/roadmap/MVP.md)._
 
 ```bash
 # install using npm
-npm install @je-es/project
+npm install @je-es/lsp
 ```
 
 ```ts
 // import using typescript
-import * as Project from "@je-es/project";
+import * as lsp from "@je-es/lsp";
 ```
 
 
@@ -61,9 +61,13 @@ import * as Project from "@je-es/project";
 
 > #### 4. [@je-es/ast](https://github.com/je-es/ast)
 
-> #### 5. [@je-es/ast-analyzer](https://github.com/je-es/ast-analyzer)
+> #### 5. [@kemet-lang/rules](https://github.com/kemet-lang/rules)
 
-> #### 5. [`@je-es/project`](https://github.com/je-es/project)
+> #### 6. [@je-es/ast-analyzer](https://github.com/je-es/ast-analyzer)
+
+> #### 7. [@je-es/project](https://github.com/je-es/project)
+
+> #### 8. [`@je-es/lsp`](https://github.com/je-es/lsp)
 
 <div align="center">
     <img src="./assets/img/line.png" alt="line" style="display: block; margin-top:20px;margin-bottom:20px;width:500px;"/>
@@ -73,7 +77,7 @@ import * as Project from "@je-es/project";
     <b>
         <br>
         <i style="color: gray;">"
-        Currently I'm working on a larger project, so I'll skip writing documentation for now due to time constraints.
+        Currently I'm working on a larger lsp, so I'll skip writing documentation for now due to time constraints.
         "</i>
         <br>
     </b>
