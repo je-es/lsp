@@ -1,4 +1,4 @@
-// lsp.ts — A customizable language server protocol.
+// lsp.ts — A customizable language server protocol with full integration with vscode.
 //
 // Developed with ❤️ by Maysara.
 
@@ -41,7 +41,7 @@
 
 // ╔════════════════════════════════════════ CORE ════════════════════════════════════════╗
 
-    export class KemetLSP {
+    export class LSP {
         private connection  : Connection;
         private documents   : TextDocuments<TextDocument>;
         private config      : LSPConfig;

@@ -50,7 +50,7 @@ var __async = (__this, __arguments, generator) => {
 // lib/lsp.ts
 var lsp_exports = {};
 __export(lsp_exports, {
-  KemetLSP: () => KemetLSP
+  LSP: () => LSP
 });
 module.exports = __toCommonJS(lsp_exports);
 var import_vscode_languageserver6 = require("vscode-languageserver");
@@ -786,7 +786,7 @@ var MetricsHandler = class {
 };
 
 // lib/lsp.ts
-var KemetLSP = class {
+var LSP = class {
   constructor(connection, documents, config) {
     // Projects
     this.projects = null;
@@ -989,6 +989,6 @@ var KemetLSP = class {
 };
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
-  KemetLSP
+  LSP
 });
 //# sourceMappingURL=lsp.js.map

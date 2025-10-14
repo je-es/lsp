@@ -753,7 +753,7 @@ var MetricsHandler = class {
 };
 
 // lib/lsp.ts
-var KemetLSP = class {
+var LSP = class {
   constructor(connection, documents, config) {
     // Projects
     this.projects = null;
@@ -955,6 +955,6 @@ var KemetLSP = class {
   }
 };
 export {
-  KemetLSP
+  LSP
 };
 //# sourceMappingURL=lsp.mjs.map

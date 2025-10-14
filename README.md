@@ -12,7 +12,7 @@
 
 <p align="center" style="font-style:italic; color:gray;">
     <br>
-    A customizable language server protocol..!
+    A customizable language server protocol with full integration with vscode..!
     <br>
 </p>
 
@@ -44,9 +44,45 @@ import * as lsp from "@je-es/lsp";
 
 > Example:
 
+```ts
+// for vscode
+import { createConnection, ProposedFeatures } from 'vscode-languageserver/node';
+import { TextDocuments } from 'vscode-languageserver';
+import { TextDocument } from 'vscode-languageserver-textdocument';
+
+// core
+import { LSP } from '@je-es/lsp';
+
+// your syntax
+import { KemetSyntax } from '@kemet-lang/rules';
+```
+
+> then inside the vscode lsp `server.ts` file :
 
 ```ts
+try {
+    // Create connection and document manager
+    const connection 	= createConnection(ProposedFeatures.all);
+    const documents 	= new TextDocuments(TextDocument);
 
+    // Initialize the LSP with syntax and workspace root
+    const lsp = new LSP(connection, documents, {
+        syntax		: KemetSyntax,
+        rootPath	: process.cwd()
+    });
+
+    // Start the server
+    lsp.start();
+
+    console.log('[SERVER] Kemet LSP Server started successfully! 🚀');
+} catch (error) {
+    console.error('[SERVER] FATAL ERROR during initialization:', error);
+    if (error instanceof Error) {
+        console.error('Message:', error.message);
+        console.error('Stack:', error.stack);
+    }
+    process.exit(1);
+}
 ```
 
 

@@ -13,7 +13,7 @@ interface ServerMetrics {
     averageValidationTime: number;
     cacheHitRate: number;
 }
-declare class KemetLSP {
+declare class LSP {
     private connection;
     private documents;
     private config;
@@ -43,4 +43,4 @@ declare class KemetLSP {
     getSyntax(): Syntax;
 }
 
-export { KemetLSP, type LSPConfig, type ServerMetrics };
+export { LSP, type LSPConfig, type ServerMetrics };
