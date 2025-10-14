@@ -200,7 +200,7 @@ var DiagnosticsHandler = class {
               end: { line: 0, character: 0 }
             },
             message: `LSP internal error: ${e instanceof Error ? e.message : "Unknown error"}`,
-            source: "kemet-lsp"
+            source: "kls"
           }]
         };
       }
@@ -242,7 +242,7 @@ var DiagnosticsHandler = class {
               end: { line: 0, character: 0 }
             },
             message: `Too many diagnostics. Showing first ${maxDiagnostics} of ${diagnostics.length}.`,
-            source: "kemet-lsp"
+            source: "kls"
           });
           this.updateMetrics(startTime, allErrors.length);
           return truncated;
@@ -264,7 +264,7 @@ var DiagnosticsHandler = class {
             end: { line: 0, character: 0 }
           },
           message: `LSP internal error: ${e instanceof Error ? e.message : "Unknown error"}. Please check the output console.`,
-          source: "kemet-lsp"
+          source: "kls"
         }];
       }
     });
@@ -292,7 +292,7 @@ var DiagnosticsHandler = class {
           end: document.positionAt(span.end)
         },
         message: kemetDiag.msg,
-        source: "kemet-lsp",
+        source: "kls",
         code: kemetDiag.code
       };
     } catch (e) {

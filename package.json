@@ -1,6 +1,6 @@
 {
 	"name": "@je-es/lsp",
-	"version": "0.0.1",
+	"version": "0.0.2",
 	"description": "A customizable language server protocol with full integration with vscode.",
 	"keywords": [
 		"je-es",
