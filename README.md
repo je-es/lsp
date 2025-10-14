@@ -132,7 +132,7 @@ try {
 <br>
 <div align="center">
     <a href="https://github.com/maysara-elshewehy">
-        <img src="https://img.shields.io/badge/Made with ❤️ by-Maysara-blue"/>
+        <img src="https://img.shields.io/badge/by-Maysara-blue"/>
     </a>
 </div>
 
