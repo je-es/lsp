@@ -1,9 +1,10 @@
 import { Connection, TextDocuments } from 'vscode-languageserver';
 import { TextDocument } from 'vscode-languageserver-textdocument';
 import * as ProjectLib from '@je-es/project';
+import { Syntax } from '@je-es/syntax';
 
 interface LSPConfig {
-    syntax: unknown;
+    syntax: Syntax;
     rootPath: string;
 }
 interface ServerMetrics {
@@ -39,6 +40,7 @@ declare class KemetLSP {
         anonymous: ProjectLib.Project;
     } | null;
     getServerMetrics(): ServerMetrics;
+    getSyntax(): Syntax;
 }
 
 export { KemetLSP, type LSPConfig, type ServerMetrics };

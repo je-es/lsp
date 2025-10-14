@@ -6,21 +6,16 @@
 
 // ╔════════════════════════════════════════ PACK ════════════════════════════════════════╗
 
-    import {
-        Connection,
-        TextDocuments,
-        InitializeParams,
-        InitializeResult,
-        DidChangeConfigurationNotification,
-        TextDocumentSyncKind,
-    } from 'vscode-languageserver';
-    import { TextDocument } from 'vscode-languageserver-textdocument';
-    import * as ProjectLib from '@je-es/project';
-    import { DiagnosticsHandler } from './utils/diagnostics';
-    import { CompletionHandler } from './utils/completion';
-    import { HoverHandler } from './utils/hover';
-    import { SettingsManager } from './utils/settings';
-    import { MetricsHandler } from './utils/metrics';
+    import { Connection, TextDocuments, InitializeParams, InitializeResult, DidChangeConfigurationNotification, TextDocumentSyncKind, }
+                                    from 'vscode-languageserver';
+    import { TextDocument }         from 'vscode-languageserver-textdocument';
+    import * as ProjectLib          from '@je-es/project';
+    import type { Syntax }          from '@je-es/syntax';
+    import { DiagnosticsHandler }   from './utils/diagnostics';
+    import { CompletionHandler }    from './utils/completion';
+    import { HoverHandler }         from './utils/hover';
+    import { SettingsManager }      from './utils/settings';
+    import { MetricsHandler }       from './utils/metrics';
 
 // ╚══════════════════════════════════════════════════════════════════════════════════════╝
 
@@ -29,8 +24,8 @@
 // ╔════════════════════════════════════════ TYPE ════════════════════════════════════════╗
 
     export interface LSPConfig {
-        syntax: unknown;
-        rootPath: string;
+        syntax          : Syntax;
+        rootPath        : string;
     }
 
     export interface ServerMetrics {
@@ -47,9 +42,9 @@
 // ╔════════════════════════════════════════ CORE ════════════════════════════════════════╗
 
     export class KemetLSP {
-        private connection: Connection;
-        private documents: TextDocuments<TextDocument>;
-        private config: LSPConfig;
+        private connection  : Connection;
+        private documents   : TextDocuments<TextDocument>;
+        private config      : LSPConfig;
 
         // Projects
         private projects: { main: ProjectLib.Project; anonymous: ProjectLib.Project } | null = null;
@@ -136,18 +131,20 @@
                 this.serverMetrics
             );
 
-            // Completion handler
+            // Completion handler (now receives syntax)
             this.completionHandler = new CompletionHandler(
                 this.connection,
                 this.documents,
-                this.projects
+                this.projects,
+                this.config.syntax
             );
 
-            // Hover handler
+            // Hover handler (now receives syntax)
             this.hoverHandler = new HoverHandler(
                 this.connection,
                 this.documents,
-                this.projects
+                this.projects,
+                this.config.syntax
             );
 
             // Metrics handler
@@ -234,12 +231,15 @@
                 // Update settings manager
                 this.settingsManager.setConfigurationCapability(this.hasConfigurationCapability);
 
+                // Get trigger characters from syntax LSP config
+                const triggerChars = this.config.syntax.lsp?.triggerCharacters || ['.', ':', '@', ' '];
+
                 const result: InitializeResult = {
                     capabilities: {
                         textDocumentSync: TextDocumentSyncKind.Incremental,
                         completionProvider: {
                             resolveProvider: true,
-                            triggerCharacters: ['.', ':', '@', ' ']
+                            triggerCharacters: triggerChars
                         },
                         diagnosticProvider: {
                             interFileDependencies: false,
@@ -277,7 +277,8 @@
                     });
                 }
 
-                this.connection.window.showInformationMessage('Kemet Language Server initialized successfully!');
+                const langName = this.config.syntax.config.name || 'Language';
+                this.connection.window.showInformationMessage(`${langName} Language Server initialized successfully!`);
             } catch (e) {
                 console.error('[LSP] Error in onInitialized:', e);
             }
@@ -310,6 +311,10 @@
 
         public getServerMetrics() {
             return this.serverMetrics;
+        }
+
+        public getSyntax() {
+            return this.config.syntax;
         }
     }
 

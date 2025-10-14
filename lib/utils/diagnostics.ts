@@ -14,8 +14,7 @@
 	import { Diagnostic as KemetDiagnostic }
 								from '@je-es/ast-analyzer';
 	import { SettingsManager } 	from './settings';
-	import { fileURLToPath } 	from 'url';
-	import * as Path 			from 'path';
+	import { determineProject } from './common';
 
 // ╚══════════════════════════════════════════════════════════════════════════════════════╝
 
@@ -128,7 +127,7 @@
 					const settings = await this.settingsManager.getDocumentSettings(uri);
 
 					// Determine which project to use
-					const { project, modulePath } = this.determineProject(uri);
+					const { project, modulePath } = determineProject(uri, this.projects);
 
 					// Lint the document
 					const result = await project.lintAsync(text, modulePath);
@@ -203,26 +202,6 @@
 
 
         // ┌──────────────────────────────── ---- ────────────────────────────────┐
-
-			private determineProject(uri: string): { project: ProjectLib.Project; modulePath?: string } {
-				if (uri.startsWith('file://')) {
-					try {
-						const filePath = fileURLToPath(uri);
-						const relative = Path.relative(this.projects.main.rootPath, filePath);
-						const isInProject = !relative.startsWith('..') && !Path.isAbsolute(relative);
-
-						if (isInProject && filePath.endsWith('.k')) {
-							console.log(`[DIAGNOSTICS] Using main project for: ${filePath}`);
-							return { project: this.projects.main, modulePath: filePath };
-						}
-					} catch (e) {
-						console.warn('[DIAGNOSTICS] Error determining project:', e);
-					}
-				}
-
-				console.log('[DIAGNOSTICS] Using anonymous project');
-				return { project: this.projects.anonymous };
-			}
 
 			private convertKemetDiagnostic(
 				kemetDiag: KemetDiagnostic,

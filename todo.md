@@ -2,10 +2,10 @@
 
     - init
 
+    - move all constants to `@je-es/syntax` then use it in `@kemet-lang/rules`
+
 - # Current
 
-    - move all constants to `@je-es/syntax` then use it in `@kemet-lang-rules`
-
-    - a lot of shared logic/functions can be moved to `./utils/common.ts`
+    - write tests.
 
 - # Later
