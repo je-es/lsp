@@ -26,6 +26,7 @@
     export interface LSPConfig {
         syntax          : Syntax;
         rootPath        : string;
+        debug           : boolean;
     }
 
     export interface ServerMetrics {
@@ -79,11 +80,11 @@
 
         private initializeProjects(): void {
             try {
-                console.log('[LSP] Initializing projects...');
+                this.log('[LSP] Initializing projects...');
 
                 // Load main project config
                 const mainProjectConfig = ProjectLib.Project.loadConfigFromPath(this.config.rootPath);
-                console.log('[LSP] Config loaded:', mainProjectConfig.name || 'anonymous');
+                this.log(`[LSP] Config loaded: ${mainProjectConfig.name || 'anonymous'}`);
 
                 // Create main project
                 const mainProject = ProjectLib.Project.create(
@@ -94,17 +95,17 @@
                         isAnonymous: false,
                     }
                 );
-                console.log('[LSP] Main project created');
+                this.log('[LSP] Main project created');
 
                 // Create anonymous project for untitled/external files
                 const anonProject = ProjectLib.Project.createAnonymous(this.config.syntax);
-                console.log('[LSP] Anonymous project created');
+                this.log('[LSP] Anonymous project created');
 
                 this.projects = { main: mainProject, anonymous: anonProject };
 
                 // Initialize the main project's program
                 this.projects.main.initializeProgram();
-                console.log('[LSP] Program initialized');
+                this.log('[LSP] Program initialized');
 
             } catch (error) {
                 console.error('[LSP] Failed to initialize projects:', error);
@@ -117,7 +118,7 @@
                 throw new Error('Projects must be initialized before handlers');
             }
 
-            console.log('[LSP] Initializing feature handlers...');
+            this.log('[LSP] Initializing feature handlers...');
 
             // Settings manager
             this.settingsManager = new SettingsManager(this.connection);
@@ -128,7 +129,8 @@
                 this.documents,
                 this.projects,
                 this.settingsManager,
-                this.serverMetrics
+                this.serverMetrics,
+                this.config.debug
             );
 
             // Completion handler (now receives syntax)
@@ -136,7 +138,8 @@
                 this.connection,
                 this.documents,
                 this.projects,
-                this.config.syntax
+                this.config.syntax,
+                this.config.debug
             );
 
             // Hover handler (now receives syntax)
@@ -144,7 +147,8 @@
                 this.connection,
                 this.documents,
                 this.projects,
-                this.config.syntax
+                this.config.syntax,
+                this.config.debug
             );
 
             // Metrics handler
@@ -154,7 +158,7 @@
                 this.serverMetrics
             );
 
-            console.log('[LSP] Feature handlers initialized');
+            this.log('[LSP] Feature handlers initialized');
         }
 
         public start(): void {
@@ -165,7 +169,7 @@
             this.documents.listen(this.connection);
             this.connection.listen();
 
-            console.log('[LSP] Server is now listening for requests');
+            this.log('[LSP] Server is now listening for requests');
         }
 
         private setupConnectionHandlers(): void {
@@ -186,7 +190,7 @@
 
             // Watched files
             this.connection.onDidChangeWatchedFiles(_change => {
-                console.log('[LSP] Watched file change detected');
+                this.log('[LSP] Watched file change detected');
                 this.connection.languages.diagnostics.refresh();
             });
 
@@ -196,7 +200,7 @@
             });
 
             this.connection.onExit(() => {
-                console.log('[LSP] Server exiting');
+                this.log('[LSP] Server exiting');
                 process.exit(0);
             });
         }
@@ -204,7 +208,7 @@
         private setupDocumentHandlers(): void {
             // Document lifecycle
             this.documents.onDidOpen(async e => {
-                console.log(`[LSP] Document opened: ${e.document.uri}`);
+                this.log(`[LSP] Document opened: ${e.document.uri}`);
                 this.connection.languages.diagnostics.refresh();
             });
 
@@ -222,7 +226,7 @@
 
         private handleInitialize(params: InitializeParams): InitializeResult {
             try {
-                console.log('[LSP] Handling initialization...');
+                this.log('[LSP] Handling initialization...');
 
                 const capabilities = params.capabilities;
                 this.hasConfigurationCapability = !!(capabilities.workspace?.configuration);
@@ -257,7 +261,7 @@
                     };
                 }
 
-                console.log('[LSP] Initialization complete');
+                this.log('[LSP] Initialization complete');
                 return result;
             } catch (e) {
                 console.error('[LSP] Error during initialization:', e);
@@ -273,7 +277,7 @@
 
                 if (this.hasWorkspaceFolderCapability) {
                     this.connection.workspace.onDidChangeWorkspaceFolders(_event => {
-                        console.log('[LSP] Workspace folder change event received');
+                        this.log('[LSP] Workspace folder change event received');
                     });
                 }
 
@@ -286,20 +290,20 @@
 
         private handleShutdown(): void {
             try {
-                console.log('[LSP] Shutdown requested');
+                this.log('[LSP] Shutdown requested');
 
                 if (this.projects) {
-                    console.log('[LSP] Final metrics:', {
+                    this.log(`[LSP] Final metrics: ${{
                         server: this.serverMetrics,
                         mainProject: this.projects.main.getMetrics(),
                         anonymousProject: this.projects.anonymous.getMetrics()
-                    });
+                    }}`);
 
                     this.projects.main.destroy();
                     this.projects.anonymous.destroy();
                 }
 
-                console.log('[LSP] Cleanup complete');
+                this.log('[LSP] Cleanup complete');
             } catch (e) {
                 console.error('[LSP] Shutdown error:', e);
             }
@@ -315,6 +319,11 @@
 
         public getSyntax() {
             return this.config.syntax;
+        }
+
+        private log(message: string) {
+            if(this.config.debug)
+            console.log(message);
         }
     }
 

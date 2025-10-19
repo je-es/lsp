@@ -47,17 +47,20 @@
 			private projects	: { main: ProjectLib.Project; anonymous: ProjectLib.Project };
 			private documents	: TextDocuments<TextDocument>;
 			private syntax		: Syntax;
+			private debug		= false;
 
 			constructor(
 				connection	: Connection,
 				documents	: TextDocuments<TextDocument>,
-				projects: { main: ProjectLib.Project; anonymous: ProjectLib.Project },
-				syntax: Syntax
+				projects	: { main: ProjectLib.Project; anonymous: ProjectLib.Project },
+				syntax		: Syntax,
+				debug 		= false
 			) {
 				this.connection = connection;
 				this.documents = documents;
 				this.projects = projects;
 				this.syntax = syntax;
+				this.debug = debug;
 
 				this.setupHandlers();
 			}
@@ -69,7 +72,7 @@
 
 			private handleCompletion(params: TextDocumentPositionParams): CompletionItem[] {
 				try {
-					console.log('[COMPLETION] Request received at position:', params.position);
+					this.log(`[COMPLETION] Request received at position: ${params.position}`);
 
 					const document = this.documents.get(params.textDocument.uri);
 					if (!document) {
@@ -78,7 +81,7 @@
 					}
 
 					const context = this.analyzeCompletionContext(document, params);
-					console.log('[COMPLETION] Context:', JSON.stringify(context, null, 2));
+					this.log(`[COMPLETION] Context: ${JSON.stringify(context, null, 2)}`);
 
 					const items: CompletionItem[] = [];
 
@@ -94,7 +97,7 @@
 						items.push(...this.getScopeSymbolCompletions(document, params));
 					}
 
-					console.log(`[COMPLETION] Returning ${items.length} total items`);
+					this.log(`[COMPLETION] Returning ${items.length} total items`);
 					return items;
 				} catch (e) {
 					console.error('[COMPLETION] Error:', e);
@@ -236,10 +239,10 @@
 					const { project, modulePath, currentModuleName } = determineProject(uri, this.projects);
 
 					// Run fresh lint with current content
-					console.log('[COMPLETION] Running lint for autocomplete...');
+					this.log('[COMPLETION] Running lint for autocomplete...');
 					const startLint = Date.now();
 					const result = project.lint(text, modulePath);
-					console.log(`[COMPLETION] Lint completed in ${Date.now() - startLint}ms`);
+					this.log(`[COMPLETION] Lint completed in ${Date.now() - startLint}ms`);
 
 					// Access scope manager
 					const scopeManager = getScopeManager(project);
@@ -249,7 +252,7 @@
 					}
 
 					const allSymbols = scopeManager.getAllSymbols();
-					console.log(`[COMPLETION] Found ${allSymbols.length} total symbols`);
+					this.log(`[COMPLETION] Found ${allSymbols.length} total symbols`);
 
 					const items: CompletionItem[] = [];
 					const seenSymbols = new Set<string>();
@@ -289,7 +292,7 @@
 						items.push(item);
 					}
 
-					console.log(`[COMPLETION] Returning ${items.length} symbols`);
+					this.log(`[COMPLETION] Returning ${items.length} symbols`);
 					return items;
 
 				} catch (error) {
@@ -311,6 +314,11 @@
 				this.connection.onCompletionResolve((item: CompletionItem) => {
 					return this.handleCompletionResolve(item);
 				});
+			}
+
+			private log(message: string) {
+				if(this.debug)
+            	console.log(message);
 			}
 
         // └──────────────────────────────────────────────────────────────────────┘

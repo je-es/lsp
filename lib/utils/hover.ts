@@ -29,17 +29,20 @@
 			private projects	: { main: ProjectLib.Project; anonymous: ProjectLib.Project };
 			private documents	: TextDocuments<TextDocument>;
 			private syntax		: Syntax;
+			private debug 		= false;
 
 			constructor(
 				connection	: Connection,
 				documents	: TextDocuments<TextDocument>,
 				projects	: { main: ProjectLib.Project; anonymous: ProjectLib.Project },
-				syntax		: Syntax
+				syntax		: Syntax,
+				debug		= false
 			) {
 				this.connection = connection;
 				this.documents 	= documents;
 				this.projects 	= projects;
 				this.syntax 	= syntax;
+				this.debug 		= debug;
 
 				this.setupHandlers();
 			}
@@ -51,7 +54,7 @@
 
 			private handleHover(params: TextDocumentPositionParams): Hover | null {
 				try {
-					console.log('[HOVER] Request received at position:', params.position);
+					this.log(`[HOVER] Request received at position: ${params.position}`);
 
 					const document = this.documents.get(params.textDocument.uri);
 					if (!document) {
@@ -61,16 +64,16 @@
 
 					const wordInfo = getWordAndSpanAtPosition(document, params.position);
 					if (!wordInfo) {
-						console.log('[HOVER] No word at position');
+						this.log('[HOVER] No word at position');
 						return null;
 					}
 
 					const { word, span } = wordInfo;
-					console.log(`[HOVER] Word: "${word}"`);
+					this.log(`[HOVER] Word: "${word}"`);
 
 					// Check if it's a keyword
 					if (this.syntax.isKeyword(word)) {
-						console.log(`[HOVER] Found keyword: ${word}`);
+						this.log(`[HOVER] Found keyword: ${word}`);
 						return this.getKeywordHover(word);
 					}
 
@@ -78,7 +81,7 @@
 					if (this.syntax.isBuiltin(word) || word === 'self') {
 						const doc = this.syntax.getBuiltinDoc(word);
 						if (doc) {
-							console.log(`[HOVER] Found builtin: ${word}`);
+							this.log(`[HOVER] Found builtin: ${word}`);
 							return {
 								contents: {
 									kind: MarkupKind.Markdown,
@@ -119,7 +122,7 @@
 					const { project, modulePath, currentModuleName } = determineProject(uri, this.projects);
 
 					// Run lint to get fresh scope manager state
-					console.log('[HOVER] Running lint...');
+					this.log('[HOVER] Running lint...');
 					const result = project.lint(text, modulePath);
 
 					// Access scope manager
@@ -129,18 +132,18 @@
 						return null;
 					}
 
-					console.log(`[HOVER] Looking up "${word}" at span:`, span);
-					console.log(`[HOVER] Current module: ${currentModuleName}`);
+					this.log(`[HOVER] Looking up "${word}" at span: ${span}`);
+					this.log(`[HOVER] Current module: ${currentModuleName}`);
 
 					// Use LSP-aware symbol lookup
 					const symbol = scopeManager.lookupSymbolFromLSP(word, span, currentModuleName);
 
 					if (!symbol) {
-						console.log(`[HOVER] Symbol "${word}" not found`);
+						this.log(`[HOVER] Symbol "${word}" not found`);
 						return null;
 					}
 
-					console.log(`[HOVER] Found symbol: ${word} (${symbol.kind})`);
+					this.log(`[HOVER] Found symbol: ${word} (${symbol.kind})`);
 					return this.formatSymbolHover(symbol);
 
 				} catch (error) {
@@ -251,6 +254,11 @@
 				this.connection.onHover((params: TextDocumentPositionParams) => {
 					return this.handleHover(params);
 				});
+			}
+
+			private log(message: string) {
+				if(this.debug)
+            	console.log(message);
 			}
 
         // └──────────────────────────────────────────────────────────────────────┘

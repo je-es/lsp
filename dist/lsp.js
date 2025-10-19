@@ -187,13 +187,15 @@ function getSymbolDocumentation(symbol) {
 
 // lib/utils/diagnostics.ts
 var DiagnosticsHandler = class {
-  constructor(connection, documents, projects, settingsManager, serverMetrics) {
+  constructor(connection, documents, projects, settingsManager, serverMetrics, debug = false) {
     this.inFlightValidations = /* @__PURE__ */ new Map();
+    this.debug = false;
     this.connection = connection;
     this.documents = documents;
     this.projects = projects;
     this.settingsManager = settingsManager;
     this.serverMetrics = serverMetrics;
+    this.debug = debug;
     this.setupHandlers();
   }
   // └──────────────────────────────────────────────────────────────────────┘
@@ -217,7 +219,7 @@ var DiagnosticsHandler = class {
           });
         }
         const diagnostics = yield validationPromise;
-        console.log(`[DIAGNOSTICS] Returning ${diagnostics.length} diagnostics for ${document.uri}`);
+        this.log(`[DIAGNOSTICS] Returning ${diagnostics.length} diagnostics for ${document.uri}`);
         return {
           kind: import_vscode_languageserver3.DocumentDiagnosticReportKind.Full,
           items: diagnostics
@@ -246,18 +248,18 @@ var DiagnosticsHandler = class {
         const diagnostics = [];
         const text = document.getText();
         const uri = document.uri;
-        console.log(`[DIAGNOSTICS] Starting validation for: ${uri}`);
+        this.log(`[DIAGNOSTICS] Starting validation for: ${uri}`);
         const settings = yield this.settingsManager.getDocumentSettings(uri);
         const { project, modulePath } = determineProject(uri, this.projects);
         const result = yield project.lintAsync(text, modulePath);
-        console.log(`[DIAGNOSTICS] Lint result: has_error=${result.has_error}, has_warning=${result.has_warning}`);
+        this.log(`[DIAGNOSTICS] Lint result: has_error=${result.has_error}, has_warning=${result.has_warning}`);
         const allErrors = result.diagnosticManager.getAllErrors();
         const allWarnings = result.diagnosticManager.getAllWarnings();
         const allInfos = result.diagnosticManager.getAllInfos();
-        console.log(`[DIAGNOSTICS] DiagnosticManager stats:`);
-        console.log(`  - Errors: ${allErrors.length}`);
-        console.log(`  - Warnings: ${allWarnings.length}`);
-        console.log(`  - Infos: ${allInfos.length}`);
+        this.log(`[DIAGNOSTICS] DiagnosticManager stats:`);
+        this.log(`  - Errors: ${allErrors.length}`);
+        this.log(`  - Warnings: ${allWarnings.length}`);
+        this.log(`  - Infos: ${allInfos.length}`);
         const allKemetDiags = [...allErrors, ...allWarnings, ...allInfos];
         for (const kemetDiag of allKemetDiags) {
           const diagnostic = this.convertKemetDiagnostic(kemetDiag, document, settings);
@@ -282,7 +284,7 @@ var DiagnosticsHandler = class {
         }
         this.updateMetrics(startTime, allErrors.length);
         const duration = Date.now() - startTime;
-        console.log(`[DIAGNOSTICS] Returning ${diagnostics.length} diagnostics in ${duration}ms`);
+        this.log(`[DIAGNOSTICS] Returning ${diagnostics.length} diagnostics in ${duration}ms`);
         return diagnostics;
       } catch (e) {
         console.error("[DIAGNOSTICS] Unexpected error:", e);
@@ -349,38 +351,44 @@ var DiagnosticsHandler = class {
   clearInflightValidation(uri) {
     this.inFlightValidations.delete(uri);
   }
+  log(message) {
+    if (this.debug)
+      console.log(message);
+  }
   // └──────────────────────────────────────────────────────────────────────┘
 };
 
 // lib/utils/completion.ts
 var import_vscode_languageserver4 = require("vscode-languageserver");
 var CompletionHandler = class {
-  constructor(connection, documents, projects, syntax) {
+  constructor(connection, documents, projects, syntax, debug = false) {
+    this.debug = false;
     this.connection = connection;
     this.documents = documents;
     this.projects = projects;
     this.syntax = syntax;
+    this.debug = debug;
     this.setupHandlers();
   }
   // └──────────────────────────────────────────────────────────────────────┘
   // ┌──────────────────────────────── MAIN ────────────────────────────────┐
   handleCompletion(params) {
     try {
-      console.log("[COMPLETION] Request received at position:", params.position);
+      this.log(`[COMPLETION] Request received at position: ${params.position}`);
       const document = this.documents.get(params.textDocument.uri);
       if (!document) {
         console.warn("[COMPLETION] Document not found");
         return [];
       }
       const context = this.analyzeCompletionContext(document, params);
-      console.log("[COMPLETION] Context:", JSON.stringify(context, null, 2));
+      this.log(`[COMPLETION] Context: ${JSON.stringify(context, null, 2)}`);
       const items = [];
       if (!context.isAfterDot) {
         items.push(...this.getKeywordCompletions(context));
         items.push(...this.getBuiltinCompletions());
         items.push(...this.getScopeSymbolCompletions(document, params));
       }
-      console.log(`[COMPLETION] Returning ${items.length} total items`);
+      this.log(`[COMPLETION] Returning ${items.length} total items`);
       return items;
     } catch (e) {
       console.error("[COMPLETION] Error:", e);
@@ -490,17 +498,17 @@ var CompletionHandler = class {
       const uri = position.textDocument.uri;
       const text = document.getText();
       const { project, modulePath, currentModuleName } = determineProject(uri, this.projects);
-      console.log("[COMPLETION] Running lint for autocomplete...");
+      this.log("[COMPLETION] Running lint for autocomplete...");
       const startLint = Date.now();
       const result = project.lint(text, modulePath);
-      console.log(`[COMPLETION] Lint completed in ${Date.now() - startLint}ms`);
+      this.log(`[COMPLETION] Lint completed in ${Date.now() - startLint}ms`);
       const scopeManager = getScopeManager(project);
       if (!scopeManager) {
         console.error("[COMPLETION] Could not access scope manager");
         return [];
       }
       const allSymbols = scopeManager.getAllSymbols();
-      console.log(`[COMPLETION] Found ${allSymbols.length} total symbols`);
+      this.log(`[COMPLETION] Found ${allSymbols.length} total symbols`);
       const items = [];
       const seenSymbols = /* @__PURE__ */ new Set();
       for (const symbol of allSymbols) {
@@ -526,7 +534,7 @@ var CompletionHandler = class {
         };
         items.push(item);
       }
-      console.log(`[COMPLETION] Returning ${items.length} symbols`);
+      this.log(`[COMPLETION] Returning ${items.length} symbols`);
       return items;
     } catch (error) {
       console.error("[COMPLETION] Error getting scope symbols:", error);
@@ -543,24 +551,30 @@ var CompletionHandler = class {
       return this.handleCompletionResolve(item);
     });
   }
+  log(message) {
+    if (this.debug)
+      console.log(message);
+  }
   // └──────────────────────────────────────────────────────────────────────┘
 };
 
 // lib/utils/hover.ts
 var import_vscode_languageserver5 = require("vscode-languageserver");
 var HoverHandler = class {
-  constructor(connection, documents, projects, syntax) {
+  constructor(connection, documents, projects, syntax, debug = false) {
+    this.debug = false;
     this.connection = connection;
     this.documents = documents;
     this.projects = projects;
     this.syntax = syntax;
+    this.debug = debug;
     this.setupHandlers();
   }
   // └──────────────────────────────────────────────────────────────────────┘
   // ┌──────────────────────────────── MAIN ────────────────────────────────┐
   handleHover(params) {
     try {
-      console.log("[HOVER] Request received at position:", params.position);
+      this.log(`[HOVER] Request received at position: ${params.position}`);
       const document = this.documents.get(params.textDocument.uri);
       if (!document) {
         console.warn("[HOVER] Document not found");
@@ -568,19 +582,19 @@ var HoverHandler = class {
       }
       const wordInfo = getWordAndSpanAtPosition(document, params.position);
       if (!wordInfo) {
-        console.log("[HOVER] No word at position");
+        this.log("[HOVER] No word at position");
         return null;
       }
       const { word, span } = wordInfo;
-      console.log(`[HOVER] Word: "${word}"`);
+      this.log(`[HOVER] Word: "${word}"`);
       if (this.syntax.isKeyword(word)) {
-        console.log(`[HOVER] Found keyword: ${word}`);
+        this.log(`[HOVER] Found keyword: ${word}`);
         return this.getKeywordHover(word);
       }
       if (this.syntax.isBuiltin(word) || word === "self") {
         const doc = this.syntax.getBuiltinDoc(word);
         if (doc) {
-          console.log(`[HOVER] Found builtin: ${word}`);
+          this.log(`[HOVER] Found builtin: ${word}`);
           return {
             contents: {
               kind: import_vscode_languageserver5.MarkupKind.Markdown,
@@ -605,21 +619,21 @@ var HoverHandler = class {
       const uri = params.textDocument.uri;
       const text = document.getText();
       const { project, modulePath, currentModuleName } = determineProject(uri, this.projects);
-      console.log("[HOVER] Running lint...");
+      this.log("[HOVER] Running lint...");
       const result = project.lint(text, modulePath);
       const scopeManager = getScopeManager(project);
       if (!scopeManager) {
         console.warn("[HOVER] Could not access scope manager");
         return null;
       }
-      console.log(`[HOVER] Looking up "${word}" at span:`, span);
-      console.log(`[HOVER] Current module: ${currentModuleName}`);
+      this.log(`[HOVER] Looking up "${word}" at span: ${span}`);
+      this.log(`[HOVER] Current module: ${currentModuleName}`);
       const symbol = scopeManager.lookupSymbolFromLSP(word, span, currentModuleName);
       if (!symbol) {
-        console.log(`[HOVER] Symbol "${word}" not found`);
+        this.log(`[HOVER] Symbol "${word}" not found`);
         return null;
       }
-      console.log(`[HOVER] Found symbol: ${word} (${symbol.kind})`);
+      this.log(`[HOVER] Found symbol: ${word} (${symbol.kind})`);
       return this.formatSymbolHover(symbol);
     } catch (error) {
       console.error("[HOVER] Error getting symbol hover:", error);
@@ -709,6 +723,10 @@ var HoverHandler = class {
     this.connection.onHover((params) => {
       return this.handleHover(params);
     });
+  }
+  log(message) {
+    if (this.debug)
+      console.log(message);
   }
   // └──────────────────────────────────────────────────────────────────────┘
 };
@@ -808,9 +826,9 @@ var LSP = class {
   }
   initializeProjects() {
     try {
-      console.log("[LSP] Initializing projects...");
+      this.log("[LSP] Initializing projects...");
       const mainProjectConfig = ProjectLib.Project.loadConfigFromPath(this.config.rootPath);
-      console.log("[LSP] Config loaded:", mainProjectConfig.name || "anonymous");
+      this.log(`[LSP] Config loaded: ${mainProjectConfig.name || "anonymous"}`);
       const mainProject = ProjectLib.Project.create(
         this.config.rootPath,
         {
@@ -819,12 +837,12 @@ var LSP = class {
           isAnonymous: false
         }
       );
-      console.log("[LSP] Main project created");
+      this.log("[LSP] Main project created");
       const anonProject = ProjectLib.Project.createAnonymous(this.config.syntax);
-      console.log("[LSP] Anonymous project created");
+      this.log("[LSP] Anonymous project created");
       this.projects = { main: mainProject, anonymous: anonProject };
       this.projects.main.initializeProgram();
-      console.log("[LSP] Program initialized");
+      this.log("[LSP] Program initialized");
     } catch (error) {
       console.error("[LSP] Failed to initialize projects:", error);
       throw error;
@@ -834,40 +852,43 @@ var LSP = class {
     if (!this.projects) {
       throw new Error("Projects must be initialized before handlers");
     }
-    console.log("[LSP] Initializing feature handlers...");
+    this.log("[LSP] Initializing feature handlers...");
     this.settingsManager = new SettingsManager(this.connection);
     this.diagnosticsHandler = new DiagnosticsHandler(
       this.connection,
       this.documents,
       this.projects,
       this.settingsManager,
-      this.serverMetrics
+      this.serverMetrics,
+      this.config.debug
     );
     this.completionHandler = new CompletionHandler(
       this.connection,
       this.documents,
       this.projects,
-      this.config.syntax
+      this.config.syntax,
+      this.config.debug
     );
     this.hoverHandler = new HoverHandler(
       this.connection,
       this.documents,
       this.projects,
-      this.config.syntax
+      this.config.syntax,
+      this.config.debug
     );
     this.metricsHandler = new MetricsHandler(
       this.connection,
       this.projects,
       this.serverMetrics
     );
-    console.log("[LSP] Feature handlers initialized");
+    this.log("[LSP] Feature handlers initialized");
   }
   start() {
     this.setupConnectionHandlers();
     this.setupDocumentHandlers();
     this.documents.listen(this.connection);
     this.connection.listen();
-    console.log("[LSP] Server is now listening for requests");
+    this.log("[LSP] Server is now listening for requests");
   }
   setupConnectionHandlers() {
     this.connection.onInitialize((params) => {
@@ -881,20 +902,20 @@ var LSP = class {
       this.connection.languages.diagnostics.refresh();
     });
     this.connection.onDidChangeWatchedFiles((_change) => {
-      console.log("[LSP] Watched file change detected");
+      this.log("[LSP] Watched file change detected");
       this.connection.languages.diagnostics.refresh();
     });
     this.connection.onShutdown(() => {
       this.handleShutdown();
     });
     this.connection.onExit(() => {
-      console.log("[LSP] Server exiting");
+      this.log("[LSP] Server exiting");
       process.exit(0);
     });
   }
   setupDocumentHandlers() {
     this.documents.onDidOpen((e) => __async(this, null, function* () {
-      console.log(`[LSP] Document opened: ${e.document.uri}`);
+      this.log(`[LSP] Document opened: ${e.document.uri}`);
       this.connection.languages.diagnostics.refresh();
     }));
     this.documents.onDidClose((e) => {
@@ -910,7 +931,7 @@ var LSP = class {
   handleInitialize(params) {
     var _a, _b, _c;
     try {
-      console.log("[LSP] Handling initialization...");
+      this.log("[LSP] Handling initialization...");
       const capabilities = params.capabilities;
       this.hasConfigurationCapability = !!((_a = capabilities.workspace) == null ? void 0 : _a.configuration);
       this.hasWorkspaceFolderCapability = !!((_b = capabilities.workspace) == null ? void 0 : _b.workspaceFolders);
@@ -937,7 +958,7 @@ var LSP = class {
           }
         };
       }
-      console.log("[LSP] Initialization complete");
+      this.log("[LSP] Initialization complete");
       return result;
     } catch (e) {
       console.error("[LSP] Error during initialization:", e);
@@ -951,7 +972,7 @@ var LSP = class {
       }
       if (this.hasWorkspaceFolderCapability) {
         this.connection.workspace.onDidChangeWorkspaceFolders((_event) => {
-          console.log("[LSP] Workspace folder change event received");
+          this.log("[LSP] Workspace folder change event received");
         });
       }
       const langName = this.config.syntax.config.name || "Language";
@@ -962,17 +983,17 @@ var LSP = class {
   }
   handleShutdown() {
     try {
-      console.log("[LSP] Shutdown requested");
+      this.log("[LSP] Shutdown requested");
       if (this.projects) {
-        console.log("[LSP] Final metrics:", {
+        this.log(`[LSP] Final metrics: ${{
           server: this.serverMetrics,
           mainProject: this.projects.main.getMetrics(),
           anonymousProject: this.projects.anonymous.getMetrics()
-        });
+        }}`);
         this.projects.main.destroy();
         this.projects.anonymous.destroy();
       }
-      console.log("[LSP] Cleanup complete");
+      this.log("[LSP] Cleanup complete");
     } catch (e) {
       console.error("[LSP] Shutdown error:", e);
     }
@@ -985,6 +1006,10 @@ var LSP = class {
   }
   getSyntax() {
     return this.config.syntax;
+  }
+  log(message) {
+    if (this.config.debug)
+      console.log(message);
   }
 };
 // Annotate the CommonJS export names for ESM import in node:

@@ -6,6 +6,7 @@ import { Syntax } from '@je-es/syntax';
 interface LSPConfig {
     syntax: Syntax;
     rootPath: string;
+    debug: boolean;
 }
 interface ServerMetrics {
     totalValidations: number;
@@ -41,6 +42,7 @@ declare class LSP {
     } | null;
     getServerMetrics(): ServerMetrics;
     getSyntax(): Syntax;
+    private log;
 }
 
 export { LSP, type LSPConfig, type ServerMetrics };

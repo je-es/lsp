@@ -45,19 +45,22 @@
 			private settingsManager		: SettingsManager;
 			private serverMetrics		: ServerMetrics;
 			private inFlightValidations = new Map<string, Promise<Diagnostic[]>>();
+			private debug				= false;
 
 			constructor(
 				connection		: Connection,
 				documents		: TextDocuments<TextDocument>,
 				projects		: { main: ProjectLib.Project; anonymous: ProjectLib.Project },
 				settingsManager	: SettingsManager,
-				serverMetrics	: ServerMetrics
+				serverMetrics	: ServerMetrics,
+				debug			= false
 			) {
 				this.connection 		= connection;
 				this.documents 			= documents;
 				this.projects 			= projects;
 				this.settingsManager 	= settingsManager;
 				this.serverMetrics 		= serverMetrics;
+				this.debug 				= debug;
 
 				this.setupHandlers();
 			}
@@ -90,7 +93,7 @@
 
 					const diagnostics = await validationPromise;
 
-					console.log(`[DIAGNOSTICS] Returning ${diagnostics.length} diagnostics for ${document.uri}`);
+					this.log(`[DIAGNOSTICS] Returning ${diagnostics.length} diagnostics for ${document.uri}`);
 
 					return {
 						kind: DocumentDiagnosticReportKind.Full,
@@ -122,7 +125,7 @@
 					const text = document.getText();
 					const uri = document.uri;
 
-					console.log(`[DIAGNOSTICS] Starting validation for: ${uri}`);
+					this.log(`[DIAGNOSTICS] Starting validation for: ${uri}`);
 
 					const settings = await this.settingsManager.getDocumentSettings(uri);
 
@@ -132,17 +135,17 @@
 					// Lint the document
 					const result = await project.lintAsync(text, modulePath);
 
-					console.log(`[DIAGNOSTICS] Lint result: has_error=${result.has_error}, has_warning=${result.has_warning}`);
+					this.log(`[DIAGNOSTICS] Lint result: has_error=${result.has_error}, has_warning=${result.has_warning}`);
 
 					// Collect all diagnostics
 					const allErrors = result.diagnosticManager.getAllErrors();
 					const allWarnings = result.diagnosticManager.getAllWarnings();
 					const allInfos = result.diagnosticManager.getAllInfos();
 
-					console.log(`[DIAGNOSTICS] DiagnosticManager stats:`);
-					console.log(`  - Errors: ${allErrors.length}`);
-					console.log(`  - Warnings: ${allWarnings.length}`);
-					console.log(`  - Infos: ${allInfos.length}`);
+					this.log(`[DIAGNOSTICS] DiagnosticManager stats:`);
+					this.log(`  - Errors: ${allErrors.length}`);
+					this.log(`  - Warnings: ${allWarnings.length}`);
+					this.log(`  - Infos: ${allInfos.length}`);
 
 					const allKemetDiags = [...allErrors, ...allWarnings, ...allInfos];
 
@@ -175,7 +178,7 @@
 					this.updateMetrics(startTime, allErrors.length);
 
 					const duration = Date.now() - startTime;
-					console.log(`[DIAGNOSTICS] Returning ${diagnostics.length} diagnostics in ${duration}ms`);
+					this.log(`[DIAGNOSTICS] Returning ${diagnostics.length} diagnostics in ${duration}ms`);
 					return diagnostics;
 
 				} catch (e) {
@@ -260,6 +263,11 @@
 
 			clearInflightValidation(uri: string): void {
 				this.inFlightValidations.delete(uri);
+			}
+
+			private log(message: string) {
+				if(this.debug)
+            	console.log(message);
 			}
 
         // └──────────────────────────────────────────────────────────────────────┘
