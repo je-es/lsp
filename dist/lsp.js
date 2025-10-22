@@ -115,38 +115,7 @@ function getScopeManager(project) {
   return null;
 }
 function formatType(type) {
-  var _a, _b, _c;
-  if (!type || !type.kind) return "unknown";
-  switch (type.kind) {
-    case "i8":
-    case "i16":
-    case "i32":
-    case "i64":
-    case "u8":
-    case "u16":
-    case "u32":
-    case "u64":
-    case "f32":
-    case "f64":
-    case "bool":
-    case "void":
-    case "str":
-      return type.kind;
-    case "pointer":
-      return `*${formatType((_a = type.getPointer()) == null ? void 0 : _a.target)}`;
-    case "array":
-      return `[]${formatType((_b = type.getArray()) == null ? void 0 : _b.target)}`;
-    case "optional":
-      return `?${formatType((_c = type.getOptional()) == null ? void 0 : _c.target)}`;
-    case "function":
-      return "fn";
-    case "struct":
-      return "struct";
-    case "enum":
-      return "enum";
-    default:
-      return type.kind;
-  }
+  return type.toString();
 }
 function getCompletionItemKind(symbolKind) {
   return SYMBOL_KIND_TO_COMPLETION_KIND[symbolKind] || import_vscode_languageserver2.CompletionItemKind.Text;
@@ -251,7 +220,7 @@ var DiagnosticsHandler = class {
         this.log(`[DIAGNOSTICS] Starting validation for: ${uri}`);
         const settings = yield this.settingsManager.getDocumentSettings(uri);
         const { project, modulePath } = determineProject(uri, this.projects);
-        const result = yield project.lintAsync(text, modulePath);
+        const result = project.lint(text, modulePath);
         this.log(`[DIAGNOSTICS] Lint result: has_error=${result.has_error}, has_warning=${result.has_warning}`);
         const allErrors = result.diagnosticManager.getAllErrors();
         const allWarnings = result.diagnosticManager.getAllWarnings();
@@ -500,7 +469,6 @@ var CompletionHandler = class {
       const { project, modulePath, currentModuleName } = determineProject(uri, this.projects);
       this.log("[COMPLETION] Running lint for autocomplete...");
       const startLint = Date.now();
-      const result = project.lint(text, modulePath);
       this.log(`[COMPLETION] Lint completed in ${Date.now() - startLint}ms`);
       const scopeManager = getScopeManager(project);
       if (!scopeManager) {
@@ -620,7 +588,6 @@ var HoverHandler = class {
       const text = document.getText();
       const { project, modulePath, currentModuleName } = determineProject(uri, this.projects);
       this.log("[HOVER] Running lint...");
-      const result = project.lint(text, modulePath);
       const scopeManager = getScopeManager(project);
       if (!scopeManager) {
         console.warn("[HOVER] Could not access scope manager");
@@ -669,7 +636,7 @@ var HoverHandler = class {
     };
   }
   formatSymbolHover(symbol) {
-    var _a, _b, _c, _d, _e;
+    var _a, _b, _c, _d, _e, _f;
     const parts = [];
     const kindName = symbol.kind.toLowerCase();
     parts.push(`**${symbol.name}** (${kindName})`);
@@ -696,12 +663,18 @@ var HoverHandler = class {
       const typeStr = symbol.type ? formatType(symbol.type) : "unknown";
       parts.push(`${visibility}let ${mutability}${symbol.name}: ${typeStr}`);
       parts.push("```");
+    } else if (symbol.kind === "Definition") {
+      parts.push("```kemet");
+      const visibility = ((_c = symbol.visibility) == null ? void 0 : _c.kind) === "Public" ? "pub " : "";
+      const typeStr = symbol.type ? formatType(symbol.type) : "unknown";
+      parts.push(`${visibility}def ${symbol.name}: ${typeStr}`);
+      parts.push("```");
     }
     const info = [];
-    if (((_c = symbol.visibility) == null ? void 0 : _c.kind) === "Public") info.push("**public**");
-    if (((_d = symbol.mutability) == null ? void 0 : _d.kind) === "Mutable") info.push("**mutable**");
+    if (((_d = symbol.visibility) == null ? void 0 : _d.kind) === "Public") info.push("**public**");
+    if (((_e = symbol.mutability) == null ? void 0 : _e.kind) === "Mutable") info.push("**mutable**");
     if (symbol.isExported) info.push("**exported**");
-    if ((_e = symbol.metadata) == null ? void 0 : _e.isBuiltin) info.push("**built-in**");
+    if ((_f = symbol.metadata) == null ? void 0 : _f.isBuiltin) info.push("**built-in**");
     if (info.length > 0) {
       parts.push("");
       parts.push(info.join(" \u2022 "));

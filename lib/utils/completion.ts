@@ -241,7 +241,7 @@
 					// Run fresh lint with current content
 					this.log('[COMPLETION] Running lint for autocomplete...');
 					const startLint = Date.now();
-					const result = project.lint(text, modulePath);
+					// const result = project.lint(text, modulePath);
 					this.log(`[COMPLETION] Lint completed in ${Date.now() - startLint}ms`);
 
 					// Access scope manager

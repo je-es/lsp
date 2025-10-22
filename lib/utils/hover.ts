@@ -9,6 +9,7 @@
 	import { Connection, TextDocuments, TextDocumentPositionParams, Hover, MarkupKind }
 									from 'vscode-languageserver';
 	import { TextDocument } 		from 'vscode-languageserver-textdocument';
+	import * as AnalyzerLib			from '@je-es/ast-analyzer';
 	import * as ProjectLib 			from '@je-es/project';
 	import type { Syntax } 			from '@je-es/syntax';
 	import { Span } 				from '@je-es/parser';
@@ -123,7 +124,7 @@
 
 					// Run lint to get fresh scope manager state
 					this.log('[HOVER] Running lint...');
-					const result = project.lint(text, modulePath);
+					// const result = project.lint(text, modulePath);
 
 					// Access scope manager
 					const scopeManager = getScopeManager(project);
@@ -185,7 +186,7 @@
 				};
 			}
 
-			private formatSymbolHover(symbol: any): Hover {
+			private formatSymbolHover(symbol: AnalyzerLib.Symbol): Hover {
 				const parts: string[] = [];
 
 				// Header
@@ -216,6 +217,13 @@
 					const mutability = symbol.mutability?.kind === 'Mutable' ? 'mut ' : '';
 					const typeStr = symbol.type ? formatType(symbol.type) : 'unknown';
 					parts.push(`${visibility}let ${mutability}${symbol.name}: ${typeStr}`);
+					parts.push('```');
+				} else if(symbol.kind === 'Definition') {
+					// def x = fn(i32, i32) -> i32 or maybe struct/enum/or any other type !
+					parts.push('```kemet');
+					const visibility = symbol.visibility?.kind === 'Public' ? 'pub ' : '';
+					const typeStr = symbol.type ? formatType(symbol.type) : 'unknown';
+					parts.push(`${visibility}def ${symbol.name}: ${typeStr}`);
 					parts.push('```');
 				}
 

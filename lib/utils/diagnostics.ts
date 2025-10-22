@@ -133,7 +133,7 @@
 					const { project, modulePath } = determineProject(uri, this.projects);
 
 					// Lint the document
-					const result = await project.lintAsync(text, modulePath);
+					const result = project.lint(text, modulePath);
 
 					this.log(`[DIAGNOSTICS] Lint result: has_error=${result.has_error}, has_warning=${result.has_warning}`);
 

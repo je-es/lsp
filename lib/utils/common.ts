@@ -9,6 +9,7 @@
 	import { TextDocument } 		from 'vscode-languageserver-textdocument';
 	import { CompletionItemKind } 	from 'vscode-languageserver';
 	import * as ProjectLib 			from '@je-es/project';
+	import * as AST 		    	from '@je-es/ast';
 	import { Span } 				from '@je-es/parser';
 	import { fileURLToPath }		from 'url';
 	import * as Path 				from 'path';
@@ -95,30 +96,8 @@
 	/**
 	 * Format a type for display in completions/hover.
 	 */
-	export function formatType(type: any): string {
-		if (!type || !type.kind) return 'unknown';
-
-		switch (type.kind) {
-			case 'i8'	: case 'i16': case 'i32': case 'i64':
-			case 'u8'	: case 'u16': case 'u32': case 'u64':
-			case 'f32'	: case 'f64':
-			case 'bool'	: case 'void': case 'str':
-				return type.kind;
-			case 'pointer':
-				return `*${formatType(type.getPointer()?.target)}`;
-			case 'array':
-				return `[]${formatType(type.getArray()?.target)}`;
-			case 'optional':
-				return `?${formatType(type.getOptional()?.target)}`;
-			case 'function':
-				return 'fn';
-			case 'struct':
-				return 'struct';
-			case 'enum':
-				return 'enum';
-			default:
-				return type.kind;
-		}
+	export function formatType(type: AST.TypeNode): string {
+		return type.toString();
 	}
 
 	/**
@@ -184,96 +163,6 @@
 		if (symbol.isExported) parts.push('exported');
 
 		return parts.join(', ');
-	}
-
-	/**
-	 * Check if a symbol should be included in completions based on visibility and context.
-	 */
-	export function shouldIncludeSymbol( symbol: any, currentModuleName: string, modulePath?: string ): boolean {
-		// Skip synthetic symbols
-		if (symbol.metadata?.isSynthetic) {
-			return false;
-		}
-
-		const symbolModule = symbol.module || '';
-		const isFromCurrentModule =
-			symbolModule === modulePath ||
-			symbolModule === currentModuleName ||
-			symbolModule === '';
-
-		const isImport = symbol.kind === 'Use';
-		const isBuiltin = symbol.metadata?.isBuiltin === true;
-		const isPublicExported = symbol.isExported && symbol.visibility?.kind === 'Public';
-
-		return isFromCurrentModule || isImport || isBuiltin || isPublicExported;
-	}
-
-	/**
-	 * Get keyword detail and documentation for completion resolve.
-	 */
-	export function getKeywordCompletionInfo(keyword: string, doc: any): { detail: string; documentation: string } {
-		return {
-			detail: doc.signature,
-			documentation: `${doc.description}${doc.example ? '\n\nExample:\n' + doc.example : ''}`
-		};
-	}
-
-	/**
-	 * Format symbol for hover display with full signature and metadata.
-	 */
-	export function formatSymbolForHover(symbol: any): string[] {
-		const parts: string[] = [];
-
-		// Header
-		const kindName = symbol.kind.toLowerCase();
-		parts.push(`**${symbol.name}** (${kindName})`);
-		parts.push('');
-
-		// Signature/Type
-		if (symbol.kind === 'Function') {
-			parts.push('```kemet');
-			const visibility 	= symbol.visibility?.kind === 'Public' ? 'pub ' : '';
-			const metadata 		= symbol.metadata || {};
-			const params 		= metadata.params || [];
-			const returnType 	= metadata.returnType ? formatType(metadata.returnType) : 'void';
-			const errorType 	= metadata.errorType ? formatType(metadata.errorType) : null;
-
-			const paramStrs 	= params.map((p: any) => {
-				const mut = p.mutability?.kind === 'Mutable' ? 'mut ' : '';
-				return `${mut}${p.name}: ${p.type ? formatType(p.type) : 'unknown'}`;
-			});
-
-			const errorPart 	= errorType ? `${errorType}!` : '';
-			parts.push(`${visibility}fn ${symbol.name}(${paramStrs.join(', ')}) -> ${errorPart}${returnType}`);
-			parts.push('```');
-		} else if (symbol.kind === 'Variable' || symbol.kind === 'Parameter') {
-			parts.push('```kemet');
-			const visibility = symbol.visibility?.kind === 'Public' ? 'pub ' : '';
-			const mutability = symbol.mutability?.kind === 'Mutable' ? 'mut ' : '';
-			const typeStr = symbol.type ? formatType(symbol.type) : 'unknown';
-			parts.push(`${visibility}let ${mutability}${symbol.name}: ${typeStr}`);
-			parts.push('```');
-		}
-
-		// Additional info
-		const info: string[] = [];
-		if (symbol.visibility?.kind === 'Public') info.push('**public**');
-		if (symbol.mutability?.kind === 'Mutable') info.push('**mutable**');
-		if (symbol.isExported) info.push('**exported**');
-		if (symbol.metadata?.isBuiltin) info.push('**built-in**');
-
-		if (info.length > 0) {
-			parts.push('');
-			parts.push(info.join(' • '));
-		}
-
-		// Module info
-		if (symbol.module) {
-			parts.push('');
-			parts.push(`Module: \`${symbol.module}\``);
-		}
-
-		return parts;
 	}
 
 // ╚══════════════════════════════════════════════════════════════════════════════════════╝
