@@ -12,7 +12,7 @@
 	import * as AnalyzerLib			from '@je-es/ast-analyzer';
 	import * as ProjectLib 			from '@je-es/project';
 	import type { Syntax } 			from '@je-es/syntax';
-	import { Span } 				from '@je-es/parser';
+	import { Span } 				from '@je-es/ast';
 	import { determineProject, formatType, getScopeManager, getWordAndSpanAtPosition }
 									from './common';
 

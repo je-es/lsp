@@ -10,7 +10,7 @@
 								from 'vscode-languageserver';
 	import { TextDocument } 	from 'vscode-languageserver-textdocument';
 	import * as ProjectLib 		from '@je-es/project';
-	import { Span } 			from '@je-es/parser';
+	import { Span } 			from '@je-es/ast';
 	import { Diagnostic as KemetDiagnostic }
 								from '@je-es/ast-analyzer';
 	import { SettingsManager } 	from './settings';

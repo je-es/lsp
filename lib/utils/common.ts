@@ -10,7 +10,7 @@
 	import { CompletionItemKind } 	from 'vscode-languageserver';
 	import * as ProjectLib 			from '@je-es/project';
 	import * as AST 		    	from '@je-es/ast';
-	import { Span } 				from '@je-es/parser';
+	import { Span } 				from '@je-es/ast';
 	import { fileURLToPath }		from 'url';
 	import * as Path 				from 'path';
 	import { SYMBOL_KIND_TO_COMPLETION_KIND } from './constants';
